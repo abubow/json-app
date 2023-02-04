@@ -15,5 +15,8 @@ func main() {
 	r.GET("/ping", controllers.PingApp)
 	r.POST("/posts", controllers.CreatePost)
 	r.GET("/posts", controllers.GetAllPosts)
+	r.GET("/posts/:id", controllers.GetPost)
+	r.PATCH("/posts/:id", controllers.UpdatePost)
+	r.DELETE("/posts/:id", controllers.DeletePost)
 	r.Run()
 }

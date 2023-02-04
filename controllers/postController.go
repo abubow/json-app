@@ -13,10 +13,11 @@ import (
 // 	ID        uint   `json:"id" gorm:"primary_key"`
 // 	Title     string `json:"title"`
 // 	Body      string `json:"body"`
-// 	Author    string `json:"author"`
 // 	Published bool   `json:"published"`
 // 	CreatedAt string `json:"created_at"`
 // 	UpdatedAt string `json:"updated_at"`
+// 	Author    User   `json:"author" gorm:"foreignkey:AuthorID"`
+// 	AuthorID  uint   `json:"author_id"`
 // }
 
 func CreatePost(c *gin.Context) {
@@ -32,7 +33,7 @@ func CreatePost(c *gin.Context) {
 	if json.Body == "" {
 		errors = append(errors, "Body is required\n")
 	}
-	if json.Author == "" {
+	if json.AuthorID == 0 {
 		errors = append(errors, "Author is required\n")
 	}
 	if len(errors) > 0 {
@@ -41,16 +42,27 @@ func CreatePost(c *gin.Context) {
 		})
 		return
 	}
+	// get the author
+	var author models.User
+	resultU := initial.DB.First(&author, json.AuthorID)
+	if resultU.Error != nil {
+		c.JSON(404, gin.H{
+			"message": "Author not found",
+		})
+		return
+	}
+	// set the author
+	json.Author = author
 	// create a post object
 	post := models.Post{
 		Title:     json.Title,
 		Body:      json.Body,
 		Author:    json.Author,
 		Published: json.Published,
+		CreatedAt: time.Now().Format(time.RFC3339),
+		UpdatedAt: time.Now().Format(time.RFC3339),
+		AuthorID:  json.AuthorID,
 	}
-	// set the created at and updated at fields
-	post.CreatedAt = time.Now().Format(time.RFC3339)
-	post.UpdatedAt = time.Now().Format(time.RFC3339)
 	// save to the database
 	result := initial.DB.Create(&post)
 	if result.Error != nil {
@@ -64,41 +76,6 @@ func CreatePost(c *gin.Context) {
 	log.Println("Post created successfully")
 	c.JSON(201, gin.H{
 		"message": "Post created successfully",
-		"post":    post,
-	})
-}
-
-func GetAllPosts(c *gin.Context) {
-	var posts []models.Post
-	result := initial.DB.Find(&posts)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-		c.JSON(500, gin.H{
-			"message": "Internal server error",
-		})
-		return
-	}
-	c.JSON(200, gin.H{
-		"message": "Posts fetched successfully",
-		"posts":   posts,
-	})
-}
-
-func GetPost(c *gin.Context) {
-	// get the post id from the url params
-	id := c.Param("id")
-	// get the post with that id
-	var post models.Post
-	result := initial.DB.First(&post, id)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-		c.JSON(500, gin.H{
-			"message": "Internal server error",
-		})
-		return
-	}
-	c.JSON(200, gin.H{
-		"message": "Post fetched successfully",
 		"post":    post,
 	})
 }
@@ -128,7 +105,7 @@ func UpdatePost(c *gin.Context) {
 	if json.Body == "" {
 		errors = append(errors, "Body is required\n")
 	}
-	if json.Author == "" {
+	if json.AuthorID == 0 {
 		errors = append(errors, "Author is required\n")
 	}
 	if len(errors) > 0 {
@@ -137,13 +114,23 @@ func UpdatePost(c *gin.Context) {
 		})
 		return
 	}
+	// get the author
+	var author models.User
+	resultU := initial.DB.First(&author, json.AuthorID)
+	if resultU.Error != nil {
+		c.JSON(404, gin.H{
+			"message": "Author not found",
+		})
+		return
+	}
+	// set the author
+	json.Author = author
 	// update the post object
 	post.Title = json.Title
 	post.Body = json.Body
 	post.Author = json.Author
 	post.Published = json.Published
-
-	// add the updated_at field
+	post.AuthorID = json.AuthorID
 	post.UpdatedAt = time.Now().Format(time.RFC3339)
 	// save to the database
 	result = initial.DB.Save(&post)
@@ -188,5 +175,40 @@ func DeletePost(c *gin.Context) {
 	log.Println("Post deleted successfully")
 	c.JSON(200, gin.H{
 		"message": "Post deleted successfully",
+	})
+}
+
+func GetAllPosts(c *gin.Context) {
+	var posts []models.Post
+	result := initial.DB.Find(&posts)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+		c.JSON(500, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "Posts fetched successfully",
+		"posts":   posts,
+	})
+}
+
+func GetPost(c *gin.Context) {
+	// get the post id from the url params
+	id := c.Param("id")
+	// get the post with that id
+	var post models.Post
+	result := initial.DB.First(&post, id)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+		c.JSON(500, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "Post fetched successfully",
+		"post":    post,
 	})
 }

@@ -2,19 +2,23 @@ package controllers
 
 import (
 	"log"
+	"time"
 
 	"github.com/a/json-app/initial"
 	"github.com/a/json-app/models"
 	"github.com/gin-gonic/gin"
 )
 
-//	type Post struct {
-//		ID        uint   `json:"id" gorm:"primary_key"`
-//		Title     string `json:"title"`
-//		Body      string `json:"body"`
-//		Author    string `json:"author"`
-//		Published bool   `json:"published"`
-//	}
+// type Post struct {
+// 	ID        uint   `json:"id" gorm:"primary_key"`
+// 	Title     string `json:"title"`
+// 	Body      string `json:"body"`
+// 	Author    string `json:"author"`
+// 	Published bool   `json:"published"`
+// 	CreatedAt string `json:"created_at"`
+// 	UpdatedAt string `json:"updated_at"`
+// }
+
 func CreatePost(c *gin.Context) {
 	// get data from the request body
 	var json models.Post
@@ -44,6 +48,9 @@ func CreatePost(c *gin.Context) {
 		Author:    json.Author,
 		Published: json.Published,
 	}
+	// set the created at and updated at fields
+	post.CreatedAt = time.Now().Format(time.RFC3339)
+	post.UpdatedAt = time.Now().Format(time.RFC3339)
 	// save to the database
 	result := initial.DB.Create(&post)
 	if result.Error != nil {
@@ -135,6 +142,9 @@ func UpdatePost(c *gin.Context) {
 	post.Body = json.Body
 	post.Author = json.Author
 	post.Published = json.Published
+
+	// add the updated_at field
+	post.UpdatedAt = time.Now().Format(time.RFC3339)
 	// save to the database
 	result = initial.DB.Save(&post)
 	if result.Error != nil {

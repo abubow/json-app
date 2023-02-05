@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/a/json-app/controllers"
 	"github.com/a/json-app/initial"
+	"github.com/a/json-app/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,5 +23,7 @@ func main() {
 
 	// user routes
 	r.POST("/users", controllers.SignUpUser)
+	r.POST("/login", controllers.SignInUser)
+	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	r.Run()
 }

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/a/json-app/initial"
@@ -23,8 +24,12 @@ import (
 func CreatePost(c *gin.Context) {
 	// get data from the request body
 	var json models.Post
-	c.Bind(&json)
-	log.Println(json)
+	var er = c.Bind(&json)
+	if er != nil {
+		log.Println(er)
+	}
+	// log formatted json
+	log.Println(json.AuthorID)
 	// validate the input
 	var errors []string
 	if json.Title == "" {
@@ -210,5 +215,38 @@ func GetPost(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Post fetched successfully",
 		"post":    post,
+	})
+}
+
+func GetPaginatedPosts(c *gin.Context) {
+	// get the page number from the url params
+	page := c.Param("page")
+	// convert the page number to an integer
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		log.Fatal(err)
+		c.JSON(500, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+	// get the posts
+	var posts []models.Post
+	result := initial.DB.Limit(10).Offset((pageNumber - 1) * 10).Find(&posts)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+		c.JSON(500, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+	// get the total number of posts
+	var total int64
+	initial.DB.Model(&models.Post{}).Count(&total)
+	// return the posts
+	c.JSON(200, gin.H{
+		"message": "Posts fetched successfully",
+		"posts":   posts,
+		"total":   total,
 	})
 }

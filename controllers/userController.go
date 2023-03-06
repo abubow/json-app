@@ -144,3 +144,11 @@ func Validate(c *gin.Context) {
 		"user":   user,
 	})
 }
+
+func Logout(c *gin.Context) {
+	c.SetCookie("token", "", -1, "", "", false, true)
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "User logged out",
+	})
+}

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -13,20 +14,21 @@ import (
 	"gorm.io/gorm"
 )
 
-// type User struct {
-// 	ID           uint   `json:"id" gorm:"primary_key"`
-// 	Username     string `json:"username" gorm:"unique;not null"`
-// 	Email        string `json:"email" gorm:"unique;not null"`
-// 	Password     string `json:"password" gorm:"not null"`
-// 	ProfileImage string `json:"profile_image"`
-// 	Followers    []User `json:"followers" gorm:"many2many:followers"`
-// 	Followings   []User `json:"followings" gorm:"many2many:followings"`
-// }
-
 func SignUpUser(c *gin.Context) {
 	// get data from the request body
-	var json models.User
-	c.Bind(&json)
+	var json struct {
+		Username string
+		Email    string
+		Password string
+	}
+	err := c.Bind(&json)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": err,
+		})
+		return
+	}
+	fmt.Println("json: ", json)
 	// validate the input
 	var errors []string
 	if json.Username == "" {
@@ -73,6 +75,8 @@ func SignUpUser(c *gin.Context) {
 }
 
 func SignInUser(c *gin.Context) {
+	// print the content of the request body after stringifying it
+	fmt.Println(c.Request)
 	// get data from the request body
 	var json models.User
 	c.Bind(&json)
@@ -90,6 +94,11 @@ func SignInUser(c *gin.Context) {
 		})
 		return
 	}
+	// expects user post request to have email and password in the following format
+	// {
+	// 	"email": "email",
+	// 	"password": "password"
+	// }
 	// get the user
 	var user models.User
 	result := initial.DB.Where("email = ?", json.Email).First(&user)
@@ -103,13 +112,16 @@ func SignInUser(c *gin.Context) {
 		})
 		return
 	}
-	// compare the password
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(json.Password))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"errors": "Invalid password",
-		})
-		return
+	// check if user is not a dummy user
+	if user.DummyFlag == false {
+		// compare the password
+		err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(json.Password))
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errors": "Invalid password",
+			})
+			return
+		}
 	}
 	// create a JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -134,6 +146,7 @@ func SignInUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "User logged in",
+		"token":   tokenString,
 	})
 }
 
@@ -150,5 +163,57 @@ func Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "User logged out",
+	})
+}
+
+//	type User struct {
+//		ID           uint      `json:"id" gorm:"primary_key"`
+//		Username     string    `json:"username" gorm:"unique;not null"`
+//		Email        string    `json:"email" gorm:"unique;not null"`
+//		Password     string    `json:"password" gorm:"not null"`
+//		ProfileImage string    `json:"profile_image"`
+//		CreatedAt    time.Time `json:"created_at"`
+//		UpdatedAt    time.Time `json:"updated_at"`
+//		Posts        []Post    `json:"posts" gorm:"foreignkey:UserID"`
+//		DummyFlag    bool      `json:"dummy_flag"`
+//	}
+// everthing but password
+
+func GetUser(c *gin.Context) {
+	// get the user id from the request params
+	id := c.Param("id")
+	// get the user
+	var user models.UserInfo
+	result := initial.DB.Where("id = ?", id).First(&user)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"errors": "User not found",
+		})
+		return
+	}
+	// return the user
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
+	})
+}
+
+func GetAllUsers(c *gin.Context) {
+	var users []models.User
+	initial.DB.Find(&users)
+	// return all attributes except password
+	var usersInfo []models.UserInfo
+	for _, user := range users {
+		usersInfo = append(usersInfo, models.UserInfo{
+			ID:           user.ID,
+			Username:     user.Username,
+			Email:        user.Email,
+			ProfileImage: user.ProfileImage,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+			DummyFlag:    user.DummyFlag,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"users": usersInfo,
 	})
 }

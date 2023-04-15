@@ -13,12 +13,23 @@ import (
 )
 
 func RequireAuth(c *gin.Context) {
-	// get token cookie from the request
+	// get token from cookies
 	tokenString, err := c.Cookie("token")
 	if err != nil {
-		fmt.Println("no token cookie")
-		c.AbortWithStatus(http.StatusUnauthorized)
+		fmt.Println("error getting token from cookies")
+		// expand and print c
+		fmt.Printf("%+v \n", c)
+		// get it from body
+		var json struct {
+			Token string
+		}
+		c.Bind(&json)
+		fmt.Println("json: ", json)
+		tokenString = json.Token
 	}
+	fmt.Println("tokenString: ", tokenString)
+	// print full request body
+	// fmt.Println(c.Request.Body)
 	// Decode/Validate it
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -31,7 +42,9 @@ func RequireAuth(c *gin.Context) {
 
 	if err != nil {
 		fmt.Println("error decoding token")
+		fmt.Println("error decoding token")
 		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 	// Check if token is valid
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
@@ -48,9 +61,13 @@ func RequireAuth(c *gin.Context) {
 		} else {
 			// otherwise attach the user to the context and call the next handler
 			c.Set("user", user)
+			// expand and print user
+			fmt.Printf("%+v \n", user)
 			c.Next()
 		}
 	} else {
 		c.AbortWithStatus(http.StatusUnauthorized)
 	}
+	c.Next()
+
 }

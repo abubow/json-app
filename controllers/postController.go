@@ -11,14 +11,32 @@ import (
 )
 
 // type Post struct {
-// 	ID        uint   `json:"id" gorm:"primary_key"`
-// 	Title     string `json:"title"`
-// 	Body      string `json:"body"`
-// 	Published bool   `json:"published"`
-// 	CreatedAt string `json:"created_at"`
-// 	UpdatedAt string `json:"updated_at"`
-// 	Author    User   `json:"author" gorm:"foreignkey:AuthorID"`
-// 	AuthorID  uint   `json:"author_id"`
+// 	ID        uint       `json:"id" gorm:"primary_key"`
+// 	Title     string     `json:"title"`
+// 	Body      string     `json:"body"`
+// 	Published bool       `json:"published"`
+// 	CreatedAt time.Time  `json:"created_at"`
+// 	UpdatedAt time.Time  `json:"updated_at"`
+// 	Author    User       `json:"author" gorm:"foreignkey:AuthorID"`
+// 	AuthorID  uint       `json:"author_id"`
+// 	Likes     []*User    `json:"likes" gorm:"many2many:likes"`
+// 	Comments  []*Comment `json:"comments" gorm:"foreignkey:PostID"`
+// 	UserID    uint       `json:"-"`
+// }
+
+// type Comment struct {
+// 	ID        uint       `json:"id" gorm:"primary_key"`
+// 	Body      string     `json:"body"`
+// 	CreatedAt time.Time  `json:"created_at"`
+// 	UpdatedAt time.Time  `json:"updated_at"`
+// 	Author    User       `json:"author" gorm:"foreignkey:AuthorID"`
+// 	AuthorID  uint       `json:"author_id"`
+// 	Post      *Post      `json:"post" gorm:"foreignkey:PostID"`
+// 	PostID    uint       `json:"post_id"`
+// 	Likes     []*User    `json:"likes" gorm:"many2many:likes"`
+// 	Comments  []*Comment `json:"comments" gorm:"foreignkey:ParentID"`
+// 	UserID    uint       `json:"-"`
+// 	ParentID  uint       `json:"-"`
 // }
 
 func CreatePost(c *gin.Context) {
@@ -64,9 +82,9 @@ func CreatePost(c *gin.Context) {
 		Body:      json.Body,
 		Author:    json.Author,
 		Published: json.Published,
-		CreatedAt: time.Now().Format(time.RFC3339),
-		UpdatedAt: time.Now().Format(time.RFC3339),
 		AuthorID:  json.AuthorID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	// save to the database
 	result := initial.DB.Create(&post)
@@ -136,7 +154,7 @@ func UpdatePost(c *gin.Context) {
 	post.Author = json.Author
 	post.Published = json.Published
 	post.AuthorID = json.AuthorID
-	post.UpdatedAt = time.Now().Format(time.RFC3339)
+	post.UpdatedAt = time.Now()
 	// save to the database
 	result = initial.DB.Save(&post)
 	if result.Error != nil {

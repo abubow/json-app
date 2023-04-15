@@ -14,4 +14,5 @@ func main() {
 	// migrate
 	initial.DB.AutoMigrate(&models.User{})
 	initial.DB.AutoMigrate(&models.Post{})
+	initial.DB.AutoMigrate(&models.Comment{})
 }

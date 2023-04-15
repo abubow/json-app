@@ -1,23 +1,33 @@
 package models
 
-// type User struct {
-// 	ID           uint   `json:"id" gorm:"primary_key"`
-// 	Username     string `json:"username" gorm:"unique;not null"`
-// 	Email        string `json:"email" gorm:"unique;not null"`
-// 	Password     string `json:"password" gorm:"not null"`
-// 	ProfileImage string `json:"profile_image"`
-// 	Followers    []User `json:"followers" gorm:"many2many:followers"`
-// 	Followings   []User `json:"followings" gorm:"many2many:followings"`
-// 	Posts        []Post `json:"posts" gorm:"foreignkey:UserID"`
-// }
+import "time"
 
 type Post struct {
-	ID        uint   `json:"id" gorm:"primary_key"`
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-	Published bool   `json:"published"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Author    User   `json:"author" gorm:"foreignkey:AuthorID"`
-	AuthorID  uint   `json:"author_id"`
+	ID        uint       `json:"id" gorm:"primary_key"`
+	Title     string     `json:"title"`
+	Body      string     `json:"body"`
+	Published bool       `json:"published"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	Author    User       `json:"author" gorm:"foreignkey:AuthorID"`
+	AuthorID  uint       `json:"author_id"`
+	Likes     []*User    `json:"likes" gorm:"many2many:likes"`
+	Comments  []*Comment `json:"comments" gorm:"foreignkey:PostID"`
+	UserID    uint       `json:"-"`
+}
+
+type Comment struct {
+	ID        uint      `json:"id" gorm:"primary_key"`
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Author    User      `json:"author" gorm:"foreignkey:AuthorID"`
+	AuthorID  uint      `json:"author_id"`
+	Post      *Post     `json:"post" gorm:"foreignkey:PostID"`
+	PostID    uint      `json:"post_id"`
+	Likes     []*User   `json:"likes" gorm:"many2many:likes"`
+	// may have other comment as children or may not
+	Comments []*Comment `json:"comments" gorm:"foreignkey:ParentID"`
+	UserID   uint       `json:"-"`
+	ParentID uint       `json:"-"`
 }
